@@ -1,6 +1,6 @@
 from trees import *
 from vl_codes import *
-import arithmetic
+# import arithmetic
 from json import load
 from sys import argv, exit
 

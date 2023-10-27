@@ -6,6 +6,11 @@ def shannon_fano(p):
     # Begin by sorting the probabilities in decreasing order, as required
     # in Shannon's paper.
     p = dict(sorted([(a,p[a]) for a in p if p[a]>0.0], key = lambda el: el[1], reverse = True))
+    first_key = list(p.keys())[0]
+    if p[first_key] == 0:
+        p.pop(first_key)
+
+    del first_key
 
     # Compute the cumulative probability distribution
     temp = 0
@@ -14,24 +19,22 @@ def shannon_fano(p):
         f[key] = temp
         temp += value
 
-    print(f)
-
     # assign the codewords
     code = {} # initialise as an empty dictionary
     for symbol, prob in p.items(): # for each probability
-        length  = celi(-log2(prob))
+        length  = ceil(-log2(prob))
 
         codeword = [] # initialise current codeword
-        myf = f[a]
-        for pos in range(length):
-            myf =* 2
+        myf = f[symbol]
+        for _ in range(length):
+            myf *= 2
             if myf >= 1 :
                 codeword.append(1)
-                myf -1
+                myf -=1
             else:
                 codeword.append(0)
 
-        code[a] = codeword # assign the codeword
+        code[symbol] = codeword # assign the codeword
         
     return code # return the code table
 
@@ -153,4 +156,7 @@ if __name__ == "__main__":
     p = [random() for k in range(16)]
     p = dict([(chr(k+ord('a')),p[k]/sum(p)) for k in range(len(p))])
     print(f'Probability distribution: {p}\n')
-    val = shannon_fano(p)
+    order_p = sorted(p, key = lambda x: p[x], reverse = True)
+    print(order_p)
+    code = shannon_fano(p)
+    print(code)
