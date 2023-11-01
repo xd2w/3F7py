@@ -1,4 +1,5 @@
 from math import floor, ceil
+from random import random
 from sys import stdout as so
 from bisect import bisect
 
@@ -14,10 +15,11 @@ def encode(x, p):
 
     # Compute cumulative probability as in Shannon-Fano but WITHOUT
     # sorting the probability distrbution
-    # ...
-    # ...
-    # ...
-    # ...
+
+    f = [0]
+    for a in p:
+        f.append(f[-1]+p[a])
+
     f = dict([(a,mf) for a,mf in zip(p,f)])
     
     y = [] # initialise output list
@@ -35,7 +37,7 @@ def encode(x, p):
 
         # 1) calculate the interval range to be the difference between hi and lo and 
         # add 1 to the difference. The added 1 is necessary to avoid rounding issues
-        # lohi_range = ....
+        lohi_range = hi - lo +1
 
         # 2) narrow the interval end-points [lo,hi) to the new range [f,f+p]
         # within the old interval [lo,hi], being careful to round 'innwards' so
@@ -43,8 +45,10 @@ def encode(x, p):
         # floor). This will require two instructions. Note that we start computing
         # the new 'lo', then compute the new 'hi' using the scaled probability as
         # the offset from the new 'lo' to the new 'hi'
-        # ...
-        # ...
+        lo = lo + int(ceil(f[x[k]]*lohi_range))
+        hi = lo + int(floor(p[x[k]]*lohi_range))
+
+        # print(f"doing : {x[k]}")
 
         if (lo == hi):
             raise NameError('Zero interval!')
@@ -58,9 +62,10 @@ def encode(x, p):
                 # stretch the interval by 2 and output a 0 followed by 'straddle' ones (if any)
                 # and zero the straddle after that. In fact, HOLD OFF on doing the stretching:
                 # we will do the stretching at the end of the if statement
-                # ...  append a zero to the output list y
-                # ...  extend by a sequence of 'straddle' ones
-                # ...  zero the straddle counter
+                y.append(0)
+                y.extend([1]*straddle)
+                straddle = 0
+
             elif lo >= half: # if hi > lo >= 1/2
                 # stretch the interval by 2 and substract 1, and output a 1 followed by 'straddle'
                 # zeros (if any) and zero straddle after that. Again, HOLD OFF on doing the stretching
@@ -68,23 +73,26 @@ def encode(x, p):
                 # to 2*(interval - 1/2), so for now just substract 1/2 from the interval upper and lower
                 # bound (and don't forget that when we say "1/2" we mean the integer "half" we defined
                 # above: this is an integer arithmetic implementation!
-                # ...  append a 1 to the output list y
-                # ...  extend 'straddle' zeros
-                # ...  reset the straddle counter
-                # ...
-                # ...  substract half from lo and hi
+                y.append(1)
+                y.extend([0]*straddle)
+                straddle = 0
+                lo = lo - half
+                hi = hi - half
+
             elif lo >= quarter and hi < threequarters: # if 1/4 < lo < hi < 3/4
                 # we can increment the straddle counter and stretch the interval around
                 # the half way point. This can be impemented again as 2*(interval - 1/4),
                 # and as we will stretch by 2 after the if statement all that needs doing
                 # for now is to subtract 1/4 from the upper and lower bound
-                # ...  increment straddle
-                # ...
-                # ...  subtract 'quarter' from lo and hi
+                straddle += 1
+                lo = lo - quarter
+                hi = hi - quarter
+
             else:
                 break # we break the infinite loop if the interval has reached an un-stretchable state
             # now we can stretch the interval (for all 3 conditions above) by multiplying by 2
-            # ...  multiply lo by 2
+            lo *= 2
+            hi = hi*2 +1
             # ...  multiply hi by 2 and add 1 (I DON'T KNOW WHY +1 IS NECESSARY BUT IT IS. THIS IS MAGIC.
             #      A BOX OF CHOCOLATES FOR ANYONE WHO GIVES ME A WELL ARGUED REASON FOR THIS... It seems
             #      to solve a minor precision problem.)
@@ -93,10 +101,12 @@ def encode(x, p):
     # after processing all input symbols, flush any bits still in the 'straddle' pipeline
     straddle += 1 # adding 1 to straddle for "good measure" (ensures prefix-freeness)
     if lo < quarter: # the position of lo determines the dyadic interval that fits
-        # ...  output a zero followed by "straddle" ones
-        # ...
+        y.append(0)
+        y.extend(straddle*[1])
+
     else:
-        # ...  output a 1 followed by "straddle" zeros
+        y.append(1)
+        y.extend(straddle*[0])
 
 
     return(y)
@@ -167,4 +177,27 @@ def decode(y,p,n):
             break
         
     return(x)
-    
+
+
+
+if __name__ == "__main__":
+    with open('hamlet.txt', 'r') as f:
+        hamlet = f.read()
+
+    from itertools import groupby
+    frequencies = dict([(key, len(list(group))) for key, group in groupby(sorted(hamlet))])
+    Nin = sum([frequencies[a] for a in frequencies])
+    p = dict([(a,frequencies[a]/Nin) for a in frequencies])
+    print(f'File length\t: {Nin}')
+
+    test_text = hamlet[:300]
+
+    uniform_p = {}
+    for key in p:
+        uniform_p[key] = 1/len(p)
+
+    encoded_text = encode(test_text, p)
+    decoded = decode(encoded_text, p, len(test_text))
+    print()
+    print(test_text)
+    print(''.join(decoded))
