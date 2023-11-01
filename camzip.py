@@ -1,6 +1,6 @@
 from trees import *
 from vl_codes import *
-# import arithmetic 
+import arithmetic 
 from itertools import groupby
 from json import dump
 from sys import argv

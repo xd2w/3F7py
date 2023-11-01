@@ -1,6 +1,12 @@
 from math import log2, ceil
 from random import random
-from trees import xtree2newick
+import argparse
+from trees import xtree2newick, code2xtree
+try:
+    import ete3
+    showTree = lambda x: ete3.Tree(x+';',format=1).show()
+except:
+    showTree = lambda x: print(x)
 
 def shannon_fano(p):
     """
@@ -146,12 +152,35 @@ def vl_decode(y, xt):
     return x
 
 
-if __name__ == "__main__":
-    p = [random() for k in range(16)]
+def testing(filename='hamlet.txt'):
+    """p = [random() for k in range(16)]
     p = dict([(chr(k+ord('a')),p[k]/sum(p)) for k in range(len(p))])
-    print(f'Probability distribution: {p}\n')
-    order_p = sorted(p, key = lambda x: p[x], reverse = True)
-    print(order_p)
-    # code_f = shannon_fano(p)
+    print(f'Probability distribution: {p}\n')"""
+
+    with open(filename, 'r') as f:
+        hamlet = f.read()
+
+    from itertools import groupby
+    frequencies = dict([(key, len(list(group))) for key, group in groupby(sorted(hamlet))])
+    Nin = sum([frequencies[a] for a in frequencies])
+    p = dict([(a,frequencies[a]/Nin) for a in frequencies])
+
+    code_f = shannon_fano(p)
+    showTree(xtree2newick(code2xtree(code_f)))
+
     code_h = huffman(p)
-    print(xtree2newick(code_h))
+    showTree(xtree2newick(code_h))
+
+    print(bits2bytes(list(map(int, list('011011000')))))
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Shannon-Fano and Huffman coding')
+    parser.add_argument('-f', '--file', type=str, default=None, help='creates sympol tree from file')
+    
+    args = parser.parse_args()
+    if args.file is not None:
+        testing(args.file)
+
+    else:
+        help(__name__)

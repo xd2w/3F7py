@@ -3,7 +3,20 @@ from random import random
 from sys import stdout as so
 from bisect import bisect
 
-def encode(x, p):
+def encode(x, p) -> list:
+    """
+    Encode a sequence of symbols using arithmetic coding
+    Parameters
+    ----------
+    x: list
+        sequence of symbols to be encoded 
+    p: dict [symbol : float]
+        probability distribution
+    
+    Returns
+    -------
+    arithmetic code : list of bits
+    """
 
     precision = 32
     one = int(2**precision - 1)
